@@ -30,7 +30,7 @@
             <widget class="QLabel" name="originalClassLabel">
                 <property name="geometry">
                     <rect>
-                        <x>70</x>
+                        <x>100</x>
                         <y>400</y>
                         <width>261</width>
                         <height>20</height>
@@ -126,7 +126,7 @@
             <widget class="QLabel" name="advLabel">
                 <property name="geometry">
                     <rect>
-                        <x>490</x>
+                        <x>460</x>
                         <y>10</y>
                         <width>380</width>
                         <height>340</height>

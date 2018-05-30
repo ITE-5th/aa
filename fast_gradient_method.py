@@ -46,7 +46,7 @@ class FastGradientMethod:
         out = self.model(inp)
         loss = criterion(out, Variable(torch.Tensor([float(original_pred)]).cuda().long()))
         loss.backward()
-        inp.data = inp.data + ((eps / 255.0) * torch.sign(inp.grad.data))
+        inp.data = inp.data + ((eps / 25500.0) * torch.sign(inp.grad.data))
         inp.grad.data.zero_()
         adv_pred = np.argmax(self.model(inp).data.cpu().numpy())
         adv_class = classes[adv_pred].split(',')[0]
