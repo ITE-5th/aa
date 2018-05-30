@@ -7,6 +7,9 @@ from torchvision import models
 
 from classes import classes
 
+FGSM = 'FGSM'
+ILLC = 'ILLC'
+
 
 class FastGradientMethod:
 
@@ -14,7 +17,7 @@ class FastGradientMethod:
         self.model = getattr(models, model_name)(pretrained=True)
         self.model.eval().cuda()
 
-    def modify_image(self, image_path, eps=10):
+    def modify_image(self, image_path, eps=10, method=FGSM):
         orig = cv2.imread(image_path)[..., ::-1]
         orig = cv2.resize(orig, (224, 224))
         img = orig.copy().astype(np.float32)
@@ -26,27 +29,45 @@ class FastGradientMethod:
         inp = Variable(torch.from_numpy(img).cuda().float().unsqueeze(0), requires_grad=True)
         out = self.model(inp)
         original_pred = np.argmax(out.data.cpu().numpy())
+        targeted_pred = np.argmin(out.data.cpu().numpy())
         original_class = classes[original_pred].split(',')[0]
-        if eps != 0:
-            adv, perturbation, adv_class = self.modify(img, eps, original_pred, mean, std)
-        else:
-            adv_class = original_class
-            while original_class == adv_class:
-                eps += 1
+        targeted_class = classes[targeted_pred].split(',')[0]
+        if method == FGSM:
+            if eps != 0:
                 adv, perturbation, adv_class = self.modify(img, eps, original_pred, mean, std)
+            else:
+                adv_class = original_class
+                while original_class == adv_class:
+                    eps += 1
+                    adv, perturbation, adv_class = self.modify(img, eps, original_pred, mean, std)
+        elif method == ILLC:
+            if eps != 0:
+                adv, perturbation, adv_class = self.modify(img, eps, targeted_pred, mean, std, True)
+            else:
+                adv_class = original_class
+                print(f'target is : {targeted_class}')
+                while targeted_class != adv_class and eps < 50:
+                    eps += 1
+                    adv_class_prev = adv_class
+                    adv, perturbation, adv_class = self.modify(img, eps, targeted_pred, mean, std, True)
+                    if adv_class_prev != adv_class:
+                        print(adv_class)
         adv_name = "adv.jpg"
-        perturbation_name = "perturbation.png"
+        perturbation_name = "perturbation.jpg"
         cv2.imwrite(adv_name, adv)
         cv2.imwrite(perturbation_name, perturbation)
         return original_class, adv_class, adv_name, perturbation_name
 
-    def modify(self, img, eps, original_pred, mean, std):
+    def modify(self, img, eps, original_pred, mean, std, targeted=False):
         criterion = nn.CrossEntropyLoss().cuda()
         inp = Variable(torch.from_numpy(img).cuda().float().unsqueeze(0), requires_grad=True)
         out = self.model(inp)
         loss = criterion(out, Variable(torch.Tensor([float(original_pred)]).cuda().long()))
         loss.backward()
-        inp.data = inp.data + ((eps / 255.0) * torch.sign(inp.grad.data))
+        if targeted:
+            inp.data = inp.data - ((eps / 255.0) * torch.sign(inp.grad.data))
+        else:
+            inp.data = inp.data + ((eps / 255.0) * torch.sign(inp.grad.data))
         inp.grad.data.zero_()
         adv_pred = np.argmax(self.model(inp).data.cpu().numpy())
         adv_class = classes[adv_pred].split(',')[0]

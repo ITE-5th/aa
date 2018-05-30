@@ -1,7 +1,6 @@
 import sys
 
 from PyQt5 import uic, QtWidgets, QtGui
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFileDialog
 
 from fast_gradient_method import FastGradientMethod
@@ -14,8 +13,9 @@ class Ui(QtWidgets.QMainWindow, FormClass):
         QtWidgets.QMainWindow.__init__(self, parent)
         self.setupUi(self)
         self.image_path = None
-        self.model = FastGradientMethod()
+        self.model = FastGradientMethod('resnet18')
         self.setup_events()
+
 
     def setup_events(self):
         self.loadButton.clicked.connect(self.load_original_image)
@@ -34,8 +34,9 @@ class Ui(QtWidgets.QMainWindow, FormClass):
         label.setPixmap(scaled_pixmap)
 
     def modify(self):
+        method =  self.comboBox.currentText()
         eps = self.epsSpinBox.value()
-        original_class, adv_class, adv_path, perturbation_name = self.model.modify_image(self.image_path, eps)
+        original_class, adv_class, adv_path, perturbation_name = self.model.modify_image(self.image_path, eps,method)
         self.originalClassLabel.setText(original_class)
         self.advClassLabel.setText(adv_class)
         self.load_image(adv_path, self.advLabel)
