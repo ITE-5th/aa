@@ -25,6 +25,8 @@ class Ui(QtWidgets.QMainWindow, FormClass):
         image_path, _ = QFileDialog.getOpenFileName(self, 'Choose A File')
         self.load_image(image_path, self.originalLabel)
         self.image_path = image_path
+        original_class = self.model.predict_image(image_path)
+        self.originalClassLabel.setText(original_class)
 
     def load_image(self, image_path, label):
         pixmap = QtGui.QPixmap(image_path)
